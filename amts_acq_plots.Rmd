@@ -1,0 +1,404 @@
+---
+title: "amounts_acquired_plots"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(cowplot)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(plyr)
+library(forcats)
+setwd("C:/Users/Anna/Dropbox/AMP_EGK/Projects/Seletion/scripts")
+
+combined<- read.table("../processed_data/whole_olier_rem.txt", sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+combined$Line[combined$Line=="1DS.DR.1"] <- "1DA.DR.1"
+
+stat_sum_df <- function(fun, geom="crossbar", ...) {
+  stat_summary(fun.data=fun, colour="red", geom=geom, width=0.2, ...)
+}
+
+combined_dissect<- read.table("../processed_data/total_parts_olier_rem.txt", sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+combined_dissect$Line[combined_dissect$Line=="1DS.DR.1"] <- "1DA.DR.1"
+combined_dissect$Box[combined_dissect$Box=="1DS"] <- "1DA"
+
+
+ovary<-filter(combined_dissect, Tissue=="O")
+body<-filter(combined_dissect, Tissue=="B")
+```
+whole_olier_rem.txt
+total_parts_olier_rem.txt
+
+#protien 
+```{r}
+test<-combined %>% separate(Line, c("Box_Treat", "Diet", "TissueRep"))
+test$Box<-as.numeric(gsub("[^[:digit:]]", "", test$Box_Treat))#Make RIL column
+test$Treat<-gsub("[[:digit:]]","",test$Box_Treat)#Make Treatment column
+
+test<-cbind(combined$Line, test)
+names(test)[names(test) == "combined$Line"] <- "Line"
+test$new_dat<-paste(test$Box_Treat, test$Diet, sep=".")
+
+p_avg<- dplyr::summarize(group_by(test,new_dat),p_avg=mean(p_tot_perfly, na.rm = TRUE))#
+inlcued<-p_avg %>% separate(new_dat, c("Box_Treat", "Diet"))
+try_for_plot<-cbind(p_avg$new_dat, inlcued)
+names(try_for_plot)[names(try_for_plot) == "p_avg$new_dat"] <- "Line"
+
+prot_plot<-slice(try_for_plot, 1:36)
+prot_plot$Treat<-gsub("[[:digit:]]","",prot_plot$Box_Treat)#Make Treatment column
+
+ggplot(prot_plot, aes(x=Diet, y=p_avg, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("protein (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=prot_plot, size=.75, aes(x=Diet, y=p_avg, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+ theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Protein by Diet")
+
+
+prot_plot$Box<-as.numeric(gsub("[^[:digit:]]", "", prot_plot$Box_Treat))#Make RIL column
+prot_plot$Treat<-gsub("[[:digit:]]","",prot_plot$Box_Treat)#Make Treatment column
+prot_plot$box_diet<-paste(prot_plot$Box,prot_plot$Diet)
+
+
+ggplot(prot_plot, aes(x=Treat, y=p_avg, color=as.factor(Diet))) +
+    xlab("Treatment") + ylab("protein (micrograms)") + 
+scale_x_discrete(limits=c("CH","DA","FA")) +
+  geom_point()+
+  geom_line(data=prot_plot, size=.75, aes(x=Treat, y=p_avg, group= box_diet, color=as.factor(Diet)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Protein By Treatment")
+
+ovary$BoxTreat<-paste(ovary$Box, ovary$Treat, sep=".")
+p_avg_ov<- dplyr::summarize(group_by(ovary,BoxTreat),p_avg_ov=mean(p_avg, na.rm = TRUE))#
+
+inlcued<-p_avg_ov %>% separate(BoxTreat, c("Treat", "Diet"))
+prot_ov<-cbind(p_avg_ov$BoxTreat, inlcued)
+names(prot_ov)[names(prot_ov) == "p_avg_ov$BoxTreat"] <- "BoxTreat"
+
+prot_plot_ov<-slice(prot_ov, 1:36)
+prot_plot_ov$Treat<-gsub("[[:digit:]]","",prot_plot_ov$Treat)#Make Treatment column
+prot_plot_ov$Box<-as.numeric(gsub("[^[:digit:]]", "", prot_plot_ov$BoxTreat))#Make RIL column
+prot_plot_ov$Box_Treat<-paste(prot_plot_ov$Box, prot_plot$Treat)#Make RIL column
+
+
+ggplot(prot_plot_ov, aes(x=Diet, y=p_avg_ov, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("protein (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=prot_plot_ov, size=.75, aes(x=Diet, y=p_avg_ov, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Protein Ovary")
+
+#BODY aka SOMATIC TISSUE
+body$BoxTreat<-paste(body$Box, body$Treat, sep=".")
+p_avg_bo<- dplyr::summarize(group_by(body,BoxTreat),p_avg_bo=mean(p_avg, na.rm = TRUE))#
+
+inlcued<-p_avg_bo %>% separate(BoxTreat, c("Treat", "Diet"))
+prot_bo<-cbind(p_avg_bo$BoxTreat, inlcued)
+names(prot_bo)[names(prot_bo) == "p_avg_bo$BoxTreat"] <- "BoxTreat"
+
+prot_plot_bo<-slice(prot_bo, 1:36)
+prot_plot_bo$Treat<-gsub("[[:digit:]]","",prot_plot_bo$Treat)#Make Treatment column
+prot_plot_bo$Box<-as.numeric(gsub("[^[:digit:]]", "", prot_plot_bo$BoxTreat))#Make RIL column
+prot_plot_bo$Box_Treat<-paste(prot_plot_bo$Box, prot_plot_bo$Treat)#Make RIL column
+
+
+ggplot(prot_plot_bo, aes(x=Diet, y=p_avg_bo, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("protein (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=prot_plot_bo, size=.75, aes(x=Diet, y=p_avg_bo, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Protein Soma")
+```
+
+#carbohydrate
+```{r}
+test<-combined %>% separate(Line, c("Box_Treat", "Diet", "TissueRep"))
+test$Box<-as.numeric(gsub("[^[:digit:]]", "", test$Box_Treat))#Make RIL column
+test$Treat<-gsub("[[:digit:]]","",test$Box_Treat)#Make Treatment column
+
+test<-cbind(combined$Line, test)
+names(test)[names(test) == "combined$Line"] <- "Line"
+test$new_dat<-paste(test$Box_Treat, test$Diet, sep=".")
+
+c_avg<- dplyr::summarize(group_by(test,new_dat),c_avg=mean(c_tot_perfly, na.rm = TRUE))#
+inlcued<-c_avg %>% separate(new_dat, c("Box_Treat", "Diet"))
+try_for_plot<-cbind(c_avg$new_dat, inlcued)
+names(try_for_plot)[names(try_for_plot) == "c_avg$new_dat"] <- "Line"
+
+carb_plot<-slice(try_for_plot, 1:36)
+carb_plot$Treat<-gsub("[[:digit:]]","",carb_plot$Box_Treat)#Make Treatment column
+
+
+ggplot(carb_plot, aes(x=Diet, y=c_avg, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("carbohydrate (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=carb_plot, size=.75, aes(x=Diet, y=c_avg, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Carboydrate By Diet")
+
+
+carb_plot$Box<-as.numeric(gsub("[^[:digit:]]", "", carb_plot$Box_Treat))#Make RIL column
+carb_plot$Treat<-gsub("[[:digit:]]","",carb_plot$Box_Treat)#Make Treatment column
+carb_plot$box_diet<-paste(carb_plot$Box,carb_plot$Diet)
+
+ggplot(carb_plot, aes(x=Treat, y=c_avg, color=as.factor(Diet))) +
+    xlab("Treatment") + ylab("carbohydrate (micrograms)") + 
+scale_x_discrete(limits=c("CH","DA","FA")) +
+  geom_point()+
+  geom_line(data=carb_plot, size=.75, aes(x=Treat, y=c_avg, group= box_diet, color=as.factor(Diet)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+  theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Carbohydrate By Treatment")
+
+ovary$BoxTreat<-paste(ovary$Box, ovary$Treat, sep=".")
+c_avg_ov<- dplyr::summarize(group_by(ovary,BoxTreat),c_avg_ov=mean(c_avg, na.rm = TRUE))#
+inlcued<-c_avg_ov %>% separate(BoxTreat, c("Treat", "Diet"))
+carb_ov<-cbind(c_avg_ov$BoxTreat, inlcued)
+names(carb_ov)[names(carb_ov) == "c_avg_ov$BoxTreat"] <- "BoxTreat"
+
+carb_plot_ov<-slice(carb_ov, 1:36)
+carb_plot_ov$Treat<-gsub("[[:digit:]]","",carb_plot_ov$Treat)#Make Treatment column
+carb_plot_ov$Box<-as.numeric(gsub("[^[:digit:]]", "", carb_plot_ov$BoxTreat))#Make RIL column
+carb_plot_ov$Box_Treat<-paste(carb_plot_ov$Box, carb_plot_ov$Treat)#Make RIL column
+
+
+ggplot(carb_plot_ov, aes(x=Diet, y=c_avg_ov, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("carbohydrate (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=carb_plot_ov, size=.75, aes(x=Diet, y=c_avg_ov, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Carbohydrate Ovary")
+
+#BODY aka SOMATIC TISSUE
+body$BoxTreat<-paste(body$Box, body$Treat, sep=".")
+c_avg_bo<- dplyr::summarize(group_by(body,BoxTreat),c_avg_bo=mean(c_avg, na.rm = TRUE))#
+
+inlcued<-c_avg_bo %>% separate(BoxTreat, c("Treat", "Diet"))
+carb_bo<-cbind(c_avg_bo$BoxTreat, inlcued)
+names(carb_bo)[names(carb_bo) == "c_avg_bo$BoxTreat"] <- "BoxTreat"
+
+carb_plot_bo<-slice(carb_bo, 1:36)
+carb_plot_bo$Treat<-gsub("[[:digit:]]","",carb_plot_bo$Treat)#Make Treatment column
+carb_plot_bo$Box<-as.numeric(gsub("[^[:digit:]]", "", carb_plot_bo$BoxTreat))#Make RIL column
+carb_plot_bo$Box_Treat<-paste(carb_plot_bo$Box, carb_plot_bo$Treat)#Make RIL column
+
+
+ggplot(carb_plot_bo, aes(x=Diet, y=c_avg_bo, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("carbohydrate (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=carb_plot_bo, size=.75, aes(x=Diet, y=c_avg_bo, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Carbohydrate Soma")
+```
+
+#glycogen
+```{r}
+test<-combined %>% separate(Line, c("Box_Treat", "Diet", "TissueRep"))
+test$Box<-as.numeric(gsub("[^[:digit:]]", "", test$Box_Treat))#Make RIL column
+test$Treat<-gsub("[[:digit:]]","",test$Box_Treat)#Make Treatment column
+
+test<-cbind(combined$Line, test)
+names(test)[names(test) == "combined$Line"] <- "Line"
+test$new_dat<-paste(test$Box_Treat, test$Diet, sep=".")
+
+g_avg<- dplyr::summarize(group_by(test,new_dat),g_avg=mean(g_tot_perfly, na.rm = TRUE))#
+inlcued<-g_avg %>% separate(new_dat, c("Box_Treat", "Diet"))
+try_for_plot<-cbind(g_avg$new_dat, inlcued)
+names(try_for_plot)[names(try_for_plot) == "g_avg$new_dat"] <- "Line"
+
+gly_plot<-slice(try_for_plot, 1:36)
+gly_plot$Treat<-gsub("[[:digit:]]","",gly_plot$Box_Treat)#Make Treatment column
+
+
+ggplot(gly_plot, aes(x=Diet, y=g_avg, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("glycogen (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=gly_plot, size=.75, aes(x=Diet, y=g_avg, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Glycogen By Diet")
+
+
+gly_plot$Box<-as.numeric(gsub("[^[:digit:]]", "", gly_plot$Box_Treat))#Make RIL column
+gly_plot$Treat<-gsub("[[:digit:]]","",gly_plot$Box_Treat)#Make Treatment column
+gly_plot$box_diet<-paste(gly_plot$Box,gly_plot$Diet)
+
+ggplot(gly_plot, aes(x=Treat, y=g_avg, color=as.factor(Diet))) +
+    xlab("Treatment") + ylab("glycogen (micrograms)") + 
+scale_x_discrete(limits=c("CH","DA","FA")) +
+  geom_point()+
+  geom_line(data=gly_plot, size=.75, aes(x=Treat, y=g_avg, group= box_diet, color=as.factor(Diet)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Glycogen By Treatment")
+
+ovary$BoxTreat<-paste(ovary$Box, ovary$Treat, sep=".")
+g_avg_ov<- dplyr::summarize(group_by(ovary,BoxTreat),g_avg_ov=mean(g_avg, na.rm = TRUE))#
+
+inlcued<-g_avg_ov %>% separate(BoxTreat, c("Treat", "Diet"))
+gly_ov<-cbind(g_avg_ov$BoxTreat, inlcued)
+names(gly_ov)[names(gly_ov) == "g_avg_ov$BoxTreat"] <- "BoxTreat"
+
+gly_plot_ov<-slice(gly_ov, 1:36)
+gly_plot_ov$Treat<-gsub("[[:digit:]]","",gly_plot_ov$Treat)#Make Treatment column
+gly_plot_ov$Box<-as.numeric(gsub("[^[:digit:]]", "", gly_plot_ov$BoxTreat))#Make RIL column
+gly_plot_ov$Box_Treat<-paste(gly_plot_ov$Box, gly_plot_ov$Treat)#Make RIL column
+
+ggplot(gly_plot_ov, aes(x=Diet, y=g_avg_ov, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("glycogen (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=gly_plot_ov, size=.75, aes(x=Diet, y=g_avg_ov, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Glycogen Ovary")
+
+#BODY aka SOMATIC TISSUE
+body$BoxTreat<-paste(body$Box, body$Treat, sep=".")
+g_avg_bo<- dplyr::summarize(group_by(body,BoxTreat),g_avg_bo=mean(g_avg, na.rm = TRUE))#
+
+inlcued<-g_avg_bo %>% separate(BoxTreat, c("Treat", "Diet"))
+gly_bo<-cbind(g_avg_bo$BoxTreat, inlcued)
+names(gly_bo)[names(gly_bo) == "g_avg_bo$BoxTreat"] <- "BoxTreat"
+
+gly_plot_bo<-slice(gly_bo, 1:36)
+gly_plot_bo$Treat<-gsub("[[:digit:]]","",gly_plot_bo$Treat)#Make Treatment column
+gly_plot_bo$Box<-as.numeric(gsub("[^[:digit:]]", "", gly_plot_bo$BoxTreat))#Make RIL column
+gly_plot_bo$Box_Treat<-paste(gly_plot_bo$Box, gly_plot_bo$Treat)#Make RIL column
+
+
+ggplot(gly_plot_bo, aes(x=Diet, y=g_avg_bo, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("glycogen (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=gly_plot_bo, size=.75, aes(x=Diet, y=g_avg_bo, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Glycogen Soma")
+
+```
+
+#lipid
+```{r}
+test<-combined %>% separate(Line, c("Box_Treat", "Diet", "TissueRep"))
+test$Box<-as.numeric(gsub("[^[:digit:]]", "", test$Box_Treat))#Make RIL column
+test$Treat<-gsub("[[:digit:]]","",test$Box_Treat)#Make Treatment column
+
+test<-cbind(combined$Line, test)
+names(test)[names(test) == "combined$Line"] <- "Line"
+test$new_dat<-paste(test$Box_Treat, test$Diet, sep=".")
+
+l_avg<- dplyr::summarize(group_by(test,new_dat),l_avg=mean(l_tot_perfly, na.rm = TRUE))#
+inlcued<-l_avg %>% separate(new_dat, c("Box_Treat", "Diet"))
+try_for_plot<-cbind(l_avg$new_dat, inlcued)
+names(try_for_plot)[names(try_for_plot) == "l_avg$new_dat"] <- "Line"
+
+lip_plot<-slice(try_for_plot, 1:36)
+lip_plot$Treat<-gsub("[[:digit:]]","",lip_plot$Box_Treat)#Make Treatment column
+
+
+ggplot(lip_plot, aes(x=Diet, y=l_avg, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("lipid (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=lip_plot, size=.75, aes(x=Diet, y=l_avg, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Lipid By Diet")
+
+
+
+lip_plot$Box<-as.numeric(gsub("[^[:digit:]]", "", lip_plot$Box_Treat))#Make RIL column
+lip_plot$Treat<-gsub("[[:digit:]]","",lip_plot$Box_Treat)#Make Treatment column
+lip_plot$box_diet<-paste(lip_plot$Box,lip_plot$Diet)
+
+ggplot(lip_plot, aes(x=Treat, y=l_avg, color=as.factor(Diet))) +
+    xlab("Treatment") + ylab("lipid (micrograms)") + 
+scale_x_discrete(limits=c("CH","DA","FA")) +
+  geom_point()+
+  geom_line(data=lip_plot, size=.75, aes(x=Treat, y=l_avg, group= box_diet, color=as.factor(Diet)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar")+ 
+  ggtitle("Lipid By Treatment")
+
+ovary$BoxTreat<-paste(ovary$Box, ovary$Treat, sep=".")
+l_avg_ov<- dplyr::summarize(group_by(ovary,BoxTreat),l_avg_ov=mean(l_avg, na.rm = TRUE))#
+
+inlcued<-l_avg_ov %>% separate(BoxTreat, c("Treat", "Diet"))
+lip_ov<-cbind(l_avg_ov$BoxTreat, inlcued)
+names(lip_ov)[names(lip_ov) == "l_avg_ov$BoxTreat"] <- "BoxTreat"
+
+lip_plot_ov<-slice(lip_ov, 1:36)
+lip_plot_ov$Treat<-gsub("[[:digit:]]","",lip_plot_ov$Treat)#Make Treatment column
+lip_plot_ov$Box<-as.numeric(gsub("[^[:digit:]]", "", lip_plot_ov$BoxTreat))#Make RIL column
+lip_plot_ov$Box_Treat<-paste(lip_plot_ov$Box, lip_plot_ov$Treat)#Make RIL column
+
+
+ggplot(lip_plot_ov, aes(x=Diet, y=l_avg_ov, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("lipid (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=lip_plot_ov, size=.75, aes(x=Diet, y=l_avg_ov, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Lipid Ovary")
+
+#BODY aka SOMATIC TISSUE
+body$BoxTreat<-paste(body$Box, body$Treat, sep=".")
+l_avg_bo<- dplyr::summarize(group_by(body,BoxTreat),l_avg_bo=mean(l_avg, na.rm = TRUE))#
+
+inlcued<-l_avg_bo %>% separate(BoxTreat, c("Treat", "Diet"))
+lip_bo<-cbind(l_avg_bo$BoxTreat, inlcued)
+names(lip_bo)[names(lip_bo) == "l_avg_bo$BoxTreat"] <- "BoxTreat"
+
+lip_plot_bo<-slice(lip_bo, 1:36)
+lip_plot_bo$Treat<-gsub("[[:digit:]]","",lip_plot_bo$Treat)#Make Treatment column
+lip_plot_bo$Box<-as.numeric(gsub("[^[:digit:]]", "", lip_plot_bo$BoxTreat))#Make RIL column
+lip_plot_bo$Box_Treat<-paste(lip_plot_bo$Box, lip_plot_bo$Treat)#Make RIL column
+
+ggplot(lip_plot_bo, aes(x=Diet, y=l_avg_bo, color=as.factor(Treat))) +
+    xlab("Diet") + ylab("lipid (micrograms)") + 
+scale_x_discrete(limits=c("DR","C","HS")) +
+  geom_point()+
+  geom_line(data=lip_plot_bo, size=.75, aes(x=Diet, y=l_avg_bo, group= Box_Treat, color=as.factor(Treat)))+
+    stat_summary(fun.y = mean, geom = "point", size = 3, color = "black")+
+theme(legend.position="none")+
+stat_sum_df("mean_cl_normal",geom="errorbar") + 
+  ggtitle("Lipid Soma")
+```
+
+

@@ -1,0 +1,60 @@
+---
+title: "outlier_removal&plot"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(cowplot)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(plyr)
+library(forcats)
+setwd("C:/Users/Anna/Dropbox/AMP_EGK/Projects/Selection/scripts")
+
+```
+
+#overall dataset (for removal of outliers)
+whole_body_combined_process.txt
+
+#outlier list
+liplist<-read.table("../processed_data/liplist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+protlist<-read.table("../processed_data/protlist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+carblist<-read.table("../processed_data/carblist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+glylist<-read.table("../processed_data/glylist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+#lipds (there are no outliers)
+```{r}
+combined<-read.table("../processed_data/whole_body_combined_process.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+liplist<-read.table("../processed_data/liplist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+```
+
+#everybody else 
+```{r}
+protlist<-read.table("../processed_data/protlist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE) #3DA.C.1
+carblist<-read.table("../processed_data/carblist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)#2DA.HS.2
+glylist<-read.table("../processed_data/glylist_outliers.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)#2FA.HS.2
+
+combined$p_tot_perfly[combined$p_tot_perfly>0.008927641] <- NA
+combined$c_tot_perfly[combined$c_tot_perfly>0.1447852] <- NA
+combined$g_tot_perfly[combined$g_tot_perfly>1.53968] <- NA
+
+write.table(combined, "../processed_data/whole_olier_rem.txt", sep="\t")#USE THIS
+```
+Clear working directory
+```{r}
+combined<-read.table("../processed_data/total_parts_combined_process.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)#
+
+combined$p_avg[combined$Line=="3DA.C.1"] <- NA
+combined$c_avg[combined$Line=="2DA.HS.2"] <- NA
+combined$g_avg[combined$Line=="2FA.HS.2"] <- NA
+
+write.table(combined, "../processed_data/total_parts_olier_rem.txt", sep="\t")#USE THIS
+
+```
+

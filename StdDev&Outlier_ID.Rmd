@@ -1,0 +1,217 @@
+---
+title: "StdDev&outlier_ID"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readxl)
+library(cowplot)
+library(ggplot2)
+library(ggpubr)
+library(dplyr)
+library(plyr)
+library(forcats)
+setwd("C:/Users/Anna/Dropbox/AMP_EGK/Projects/Selection/scripts")
+
+combined<-read.table("../processed_data/combined_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+see_pairs<-combined %>% group_by(Well.ID) %>% tally()
+see_numbers<-combined %>% group_by(Well.ID, plate) %>% tally()
+
+wmore2<-subset(see_numbers, n>2, select=c(Well.ID,n, plate)) #lines that have more than 2 replicates
+
+wTwo<-subset(see_numbers, n==2, select=c(Well.ID,n,plate)) #lines that have 2 replicates
+linesis1<-subset(see_numbers, n==1, select=c(Well.ID,n)) #There are no lines that have 1 replicate
+combined$Well.ID[combined$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+
+```
+whol_set<-left_join(see_numbers, combined, by="Well.ID")
+
+prot<-read.table("../processed_data/prot_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+prot$Well.ID[prot$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+#p_avg<- dplyr::summarize(group_by(prot,Well.ID),p_avg=mean(p_perfly, na.rm=TRUE))#
+#newdat<-merge(p_avg, combined, by="Well.ID")
+
+```{r}
+combined$Well.ID[combined$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+
+#average technical replicates
+p_avg<- dplyr::summarize(group_by(combined,Well.ID, plate),p_avg=mean(p_perfly, na.rm = TRUE))#
+see_numbers[duplicated(see_numbers$Well.ID),]
+
+
+test<-p_avg %>% separate(Well.ID, c("Box", "Treat", "TissueRep"))
+test$Rep<-as.numeric(gsub("[^[:digit:]]", "", test$TissueRep))#Make RIL column
+test$Tissue<-gsub("[[:digit:]]","",test$TissueRep)#Make Treatment column
+unique(test$Rep)
+unique(test$Tissue)
+
+test$Line <- paste(test$Box,test$Treat,test$Rep,sep='.')
+
+write.table(combined_dissected_p, "../processed_data/combined_dissected_p.txt", sep="\t")#USE THIS
+
+p_tot<- dplyr::summarize(group_by(test,Line),p_tot_perfly=sum(p_avg, na.rm = TRUE))#
+```
+
+
+```{r}
+combined<-read.table("../processed_data/combined_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+combined$Well.ID[combined$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+
+see_pairs<-combined %>% group_by(Well.ID) %>% tally()
+see_numbers<-combined %>% group_by(Well.ID, plate) %>% tally()
+
+g_avg<- dplyr::summarize(group_by(combined,Well.ID, plate),g_avg=mean(g_perfly, na.rm = TRUE))#
+#newdat<-merge(p_avg, combined, by="Well.ID")
+see_numbers[duplicated(see_numbers$Well.ID),]
+
+test<-g_avg %>% separate(Well.ID, c("Box", "Treat", "TissueRep"))
+test$Rep<-as.numeric(gsub("[^[:digit:]]", "", test$TissueRep))#Make RIL column
+test$Tissue<-gsub("[[:digit:]]","",test$TissueRep)#Make Treatment column
+unique(test$Rep)
+unique(test$Tissue)
+
+test$Line <- paste(test$Box,test$Treat,test$Rep,sep='.')
+write.table(test, "../processed_data/combined_dissected_g.txt", sep="\t")#USE THIS
+
+
+g_tot<- dplyr::summarize(group_by(test,Line),g_tot_perfly=sum(g_avg, na.rm = TRUE))#
+```
+
+```{r}
+combined<-read.table("../processed_data/combined_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+combined$Well.ID[combined$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+
+see_pairs<-combined %>% group_by(Well.ID) %>% tally()
+see_numbers<-combined %>% group_by(Well.ID, plate) %>% tally()
+
+c_avg<- dplyr::summarize(group_by(combined,Well.ID, plate),c_avg=mean(c_perfly, na.rm = TRUE))#
+#newdat<-merge(p_avg, combined, by="Well.ID")
+see_numbers[duplicated(see_numbers$Well.ID),]
+
+test<-c_avg %>% separate(Well.ID, c("Box", "Treat", "TissueRep"))
+test$Rep<-as.numeric(gsub("[^[:digit:]]", "", test$TissueRep))#Make RIL column
+test$Tissue<-gsub("[[:digit:]]","",test$TissueRep)#Make Treatment column
+unique(test$Rep)
+unique(test$Tissue)
+
+test$Line <- paste(test$Box,test$Treat,test$Rep,sep='.')
+write.table(test, "../processed_data/combined_dissected_c.txt", sep="\t")#USE THIS
+
+
+c_tot<- dplyr::summarize(group_by(test,Line),c_tot_perfly=sum(c_avg, na.rm = TRUE))#
+```
+
+```{r}
+combined<-read.table("../processed_data/combined_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+combined$Well.ID[combined$Well.ID=="1DA.DR.D2"] <- "1DA.DR.B2"
+
+see_pairs<-combined %>% group_by(Well.ID) %>% tally()
+see_numbers<-combined %>% group_by(Well.ID, plate) %>% tally()
+
+l_avg<- dplyr::summarize(group_by(combined,Well.ID, plate),l_avg=mean(l_perfly, na.rm = TRUE))#
+#newdat<-merge(p_avg, combined, by="Well.ID")
+see_numbers[duplicated(see_numbers$Well.ID),]
+
+test<-l_avg %>% separate(Well.ID, c("Box", "Treat", "TissueRep"))
+test$Rep<-as.numeric(gsub("[^[:digit:]]", "", test$TissueRep))#Make RIL column
+test$Tissue<-gsub("[[:digit:]]","",test$TissueRep)#Make Treatment column
+unique(test$Rep)
+unique(test$Tissue)
+
+test$Line <- paste(test$Box,test$Treat,test$Rep,sep='.')
+write.table(test, "../processed_data/combined_dissected_l.txt", sep="\t")#USE THIS
+
+
+l_tot<- dplyr::summarize(group_by(test,Line),l_tot_perfly=sum(l_avg, na.rm = TRUE))#
+```
+
+```{r}
+whole_body_pg<-merge(p_tot, g_tot, by="Line")
+whole_body_cl<-merge(c_tot, l_tot, by="Line")
+whole_body<-merge(whole_body_cl, whole_body_pg, by="Line")
+write.table(whole_body, "../processed_data/whole_body_combined_process.txt", sep="\t")
+```
+
+```{r}
+lip_disc<-read.table("../processed_data/combined_dissected_l.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+prot_disc<-read.table("../processed_data/combined_dissected_p.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+gly_disc<-read.table("../processed_data/combined_dissected_g.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+carb_disc<-read.table("../processed_data/combined_dissected_c.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+parts_body_pg<-merge(prot_disc, gly_disc, by=c("Line", "plate", "Box", "Treat", "Rep", "Tissue", "TissueRep"))
+parts_body_cl<-merge(carb_disc, lip_disc, by=c("Line", "plate", "Box", "Treat", "Rep", "Tissue", "TissueRep"))
+total_parts<- merge(parts_body_cl, parts_body_pg, by=c("Line", "plate", "Box", "Treat", "Rep", "Tissue", "TissueRep"))
+
+write.table(total_parts, "../processed_data/total_parts_combined_process.txt", sep="\t")
+
+```
+
+
+lip<-read.table("../processed_data/lip_processed.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+test<-combined %>% group_by(Well.ID) %>% tally()
+
+## standard deviations. 
+```{r}
+combined<-read.table("../processed_data/whole_body_combined_process.txt",sep="\t",header=TRUE,stringsAsFactors=FALSE)
+
+
+l525<-combined$l_tot_perfly
+carbs<-combined$c_tot_perfly
+prot<-combined$p_tot_perfly
+gly<-combined$g_tot_perfly
+
+l525sd<-sd(l525, na.rm=TRUE)# 2.829545
+b<-mean(l525, na.rm=TRUE) #7.584354
+(l525sd*3)#8.488636
+l525olier<-(l525sd*3)  + b #16.07299
+l525olier #(highest value within dataset is 14.5)
+
+csd<-sd(carbs, na.rm=TRUE)#0.03081358
+csd
+c<-mean(carbs, na.rm=TRUE)#.04586591
+c
+(csd*3 )#0.0924
+colier<- (csd*3 ) + c
+colier #0.1383066
+
+psd<-sd(prot,na.rm=TRUE)#0.001292078
+psd
+d<-mean(prot,na.rm=TRUE)#0.003632775
+d
+(psd*3) #0.003876235
+polier<-(psd*3) + d
+polier #0.00750901
+
+gsd<-sd(gly, na.rm=TRUE)#0.2362665
+gsd
+e<-mean(gly, na.rm=TRUE) # 0.4390386
+e
+(gsd*3) #0.7087996
+golier<-(gsd*3) + e 
+golier#1.147838
+```
+
+
+#Plots to look for outliers. Really, just plotted data.
+```{r}
+hist(combined$l_tot_perfly) #??before 0??
+hist(combined$c_tot_perfly)
+hist(combined$p_tot_perfly)
+hist(combined$g_tot_perfly)
+
+liplist<-combined[which((combined$l_tot_perfly> l525olier)),] #0
+carblist<-combined[which((combined$c_tot_perfly> colier)),] #1
+protlist<-combined[which((combined$p_tot_perfly> polier)),] #1
+glylist<-combined[which((combined$g_tot_perfly> golier)),]#1
+
+write.table(carblist, "../processed_data/carblist_outliers.txt", sep="\t")
+write.table(liplist, "../processed_data/liplist_outliers.txt", sep="\t")
+write.table(protlist, "../processed_data/protlist_outliers.txt", sep="\t")
+write.table(glylist, "../processed_data/glylist_outliers.txt", sep="\t")
+```
+
+
